@@ -1,3 +1,129 @@
+# TheFelix93.rb Custom method for ets-to-homeassistant
+* Currently used/implemented ETS-functions:
+   * switchable_light
+      * On/Off
+	* dimmable_light
+      * Dimmable
+      * RGB
+      * CCT/tunable white
+	* sun_protection
+      * standard covers
+      * shutters with angle-settings
+	* custom
+      * binary sensors (e.g. reed contacts, presence or any true/false GA),
+	   * sensors (DPT-to-HA-Sensor-Type mapping table from documentation is used see https://www.home-assistant.io/integrations/knx/#value-types),
+      * switches
+
+This script uses ETS-Function-name-patterns to identify the function types and middle-group or any GA-Pattern to map GAs to HA specific attributes.
+These patterns can be configured to your needs. Any pattern must be unique in its own context.
+
+## How to use
+1. Follow installation instructions of original repository: [https://github.com/laurent-martin/ets-to-homeassistant](https://github.com/laurent-martin/ets-to-homeassistant)
+2. Make sure all devices that you want in HA are available as ETS functions in your ETS project. See [ETS functions project requirements/recommendations](#ets-functions-project-requirementsrecommendations)
+3. Adapt script settings to your ETS project see [Settings inside TheFelix93.rb](#settings-inside-thefelix93rb)
+4. Execute main script
+   
+   Adapt the paths in the command to your environment:
+   ```bash
+   ets_to_hass --format homeass --full-name --fix YOUR_SCRIPT_PATH\lib\ets_to_hass\specific\TheFelix93.rb --output YOUR_OUTPUT_PATH\config_knx.yaml YOUR_ETS_PROJECT_PATH\myexport.knxproj
+   ```
+6. Check the output to identify missconfigurations in your ETS project and functions.
+   All warnings from my custom method start with "TheFelix93" e.g. `WARN -- : TheFelix93 Ankleide FB Heizung function type heating_floor not implemented.`
+7. Import output yaml into home assistant. Enjoy.
+
+## ETS functions project requirements/recommendations
+
+* Every GA that you want to get in KNX yaml config must be grouped into ETS-Functions. (Nobody can guess which GAs belong together. ETS Functions are used to create relations between GAs, that are very similar to HA entities.)
+* The script requires unique text patterns in function names, so create your ETS function structure accordingly.
+* The script requires unique GA-patterns to correctly map all sorts of HA-KNX attributes. I use **function/sub-function/channel-name** and script settings are set accordingly. Other schemes work as well, you just need to changes the script settings to fit your system.
+* A building structure in ETS project is recommended. It makes it easy to identify HA entities laters. I like to have function name, room and floor as part of the entity name.
+
+Examples from my ETS project:
+* ETS building structure and  ETS example room
+  
+   ![ETS building structure](images/TheFelix93/ETS%20building%20structure.jpg)
+   ![ETS example room](images/TheFelix93/ETS%20example%20room.jpg)
+* ETS function CCT light
+  
+   ![ETS function CCT light](images/TheFelix93/ETS%20function%20CCT%20light.jpg)
+* ETS function RBG light
+  
+![ETS function RBG light](images/TheFelix93/ETS%20function%20RBG%20light.jpg)
+* ETS function dimmable light
+
+![ETS function dimmable light](images/TheFelix93/ETS%20function%20dimmable%20light.jpg)
+* ETS function sensor current
+  
+![ETS function sensor current](images/TheFelix93/ETS%20function%20sensor%20current.jpg)
+* ETS function sensor temperature
+  
+![ETS function sensor temperature](images/TheFelix93/ETS%20function%20sensor%20temperature.jpg)
+* ETS function shutter
+  
+![ETS function shutter](images/TheFelix93/ETS%20function%20shutter.jpg)
+* ETS function standard cover
+  
+![ETS function standard cover](images/TheFelix93/ETS%20function%20standard%20cover.jpg)
+* ETS function switch
+  
+![ETS function switch](images/TheFelix93/ETS%20function%20switch.jpg)
+* ETS function switchable light
+  
+![ETS function switchable light](images/TheFelix93/ETS%20function%20switchable%20light.jpg)
+   
+   
+## Settings inside TheFelix93.rb
+TheFelix93.rb starts with a settings section.
+
+All patterns are case-in-sensitive.
+```ruby
+#### GENERAL ####
+ENTITY_NAME_WITH_FLOOR = true # if true and a function lies below a floor, the floor name is appended to the HA entity name
+
+
+#### Lights #####
+
+# In my ETS project I have a GAs with middle groups that are unique for each function
+GA_MIDDLE_GROUP_PATTERN_BRIGHTNESS_SET = '/3/'
+GA_MIDDLE_GROUP_PATTERN_BRIGHTNESS_STATUS = '/6/'
+
+## CCT ##
+# DPT 7.600 in Lights can be 'color_temperature_state_address' or 'color_temperature_address', thus we need a criteria to decide.
+GA_MIDDLE_GROUP_PATTERN_COLOR_TEMP_SET = '/5/'
+GA_MIDDLE_GROUP_PATTERN_COLOR_TEMP_STATUS = '/7/'
+
+## RGB ##
+GA_MIDDLE_GROUP_PATTERN_RGBCOLOR_SET = '/7/'
+GA_MIDDLE_GROUP_PATTERN_RGBCOLOR_STATUS = '/5/'
+
+#### Covers ####
+GA_MIDDLE_GROUP_PATTERN_COVER_UP_DOWN = '/0/' # if you only map the GAs that are needed for HA, then you dont need to change this line. In my case I mapped all exisiting GAs for each ETS functions, even if its not needed for HA. So I have to put my middle group here to distinguish between up/down and current-direction GA. Both have the same DPT.
+GA_MIDDLE_GROUP_PATTERN_COVER_POSITION_STATUS = '/4/'
+GA_MIDDLE_GROUP_PATTERN_COVER_POSITION_SET = '/3/'
+GA_MIDDLE_GROUP_PATTERN_COVER_ANGLE_SET = '/5/'
+GA_MIDDLE_GROUP_PATTERN_COVER_ANGLE_STATUS = '/6/'
+
+#### Sensors ####
+#I name all my sensors like "*Sensor*" in :custom ets functions. This name pattern is used by the script to distinguish them from other custom functions.
+#string must be part of ets function name
+PATTERN_SENSOR = 'sensor'
+
+## patterns to map HA device classes tell HA the type of binary sensor
+#string must be part of ets function name
+PATTERN_PRESENCE_SENSOR = 'präsenz'
+PATTERN_WINDOW_CONTACT = 'fensterkontakt'
+SENSOR_SYNC_STATE = true # can be used to change default sync state setting, see HA KNX docu.
+
+
+#### Switches ####
+# If non of the sensor patterns matched then the custom function must be a switch.
+#string must be part of ets function name
+PATTERN_SWITCH = nil # if you define a switch pattern, then only matches are added as switches to output yaml. In my case all remaining custom functions are switches, so nil is default.
+```
+
+# END OF README - TheFelix93.rb Custom method for ets-to-homeassistant
+All from here is original readme.
+
 # ETS project file to Home Assistant configuration
 
 A Ruby tool to convert an ETS5 project file (`*.knxproj`) into:
