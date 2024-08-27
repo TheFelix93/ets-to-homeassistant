@@ -33,6 +33,7 @@ These patterns can be configured to your needs. Any pattern must be unique in it
 
 ## ETS functions project requirements/recommendations
 
+* According to some reports in original project. The parser can't process password protected ETS projects. My project is not protected, so did not test it.
 * Every GA that you want to get in KNX yaml config must be grouped into ETS-Functions. (Nobody can guess which GAs belong together. ETS Functions are used to create relations between GAs, that are very similar to HA entities.)
 * The script requires unique text patterns in function names, so create your ETS function structure accordingly.
 * The script requires unique GA-patterns to correctly map all sorts of HA-KNX attributes. I use **function/sub-function/channel-name** and script settings are set accordingly. Other schemes work as well, you just need to changes the script settings to fit your system.
