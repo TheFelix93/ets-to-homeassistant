@@ -82,13 +82,12 @@ ENTITY_NAME_WITH_FLOOR = true # if true and a function lies below a floor, the f
 
 
 #### Lights #####
-
+# DPT 7.600 in Lights can be 'color_temperature_state_address' or 'color_temperature_address', thus we need a criteria to decide.
 # In my ETS project I have a GAs with middle groups that are unique for each function
 GA_MIDDLE_GROUP_PATTERN_BRIGHTNESS_SET = '/3/'
 GA_MIDDLE_GROUP_PATTERN_BRIGHTNESS_STATUS = '/6/'
 
 ## CCT ##
-# DPT 7.600 in Lights can be 'color_temperature_state_address' or 'color_temperature_address', thus we need a criteria to decide.
 GA_MIDDLE_GROUP_PATTERN_COLOR_TEMP_SET = '/5/'
 GA_MIDDLE_GROUP_PATTERN_COLOR_TEMP_STATUS = '/7/'
 
@@ -97,7 +96,7 @@ GA_MIDDLE_GROUP_PATTERN_RGBCOLOR_SET = '/7/'
 GA_MIDDLE_GROUP_PATTERN_RGBCOLOR_STATUS = '/5/'
 
 #### Covers ####
-GA_MIDDLE_GROUP_PATTERN_COVER_UP_DOWN = '/0/' # if you only map the GAs that are needed for HA, then you dont need to change this line. In my case I mapped all exisiting GAs for each ETS functions, even if its not needed for HA. So I have to put my middle group here to distinguish between up/down and current-direction GA. Both have the same DPT.
+GA_MIDDLE_GROUP_PATTERN_COVER_UP_DOWN = nil # if you only map the GAs that are needed for HA, then you dont need to change this line. In my case I mapped all exisiting GAs for each ETS functions, even if its not needed for HA. So I have to put my middle group here to distinguish between up/down and current-direction GA. Both have the same DPT.
 GA_MIDDLE_GROUP_PATTERN_COVER_POSITION_STATUS = '/4/'
 GA_MIDDLE_GROUP_PATTERN_COVER_POSITION_SET = '/3/'
 GA_MIDDLE_GROUP_PATTERN_COVER_ANGLE_SET = '/5/'
@@ -118,7 +117,7 @@ SENSOR_SYNC_STATE = true # can be used to change default sync state setting, see
 #### Switches ####
 # If non of the sensor patterns matched then the custom function must be a switch.
 #string must be part of ets function name
-PATTERN_SWITCH = nil # if you define a switch pattern, then only matches are added as switches to output yaml. In my case all remaining custom functions are switches, so nil is default.
+PATTERN_SWITCH = nil # if you define a switch pattern, then only matches are added as switches to output yaml. With nil set, all remaining custom functions are considered as switches.
 ```
 
 # END OF README - TheFelix93.rb Custom method for ets-to-homeassistant
