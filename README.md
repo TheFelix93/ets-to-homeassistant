@@ -17,13 +17,20 @@
 This script uses ETS-Function-name-patterns to identify the function types and middle-group or any GA-Pattern to map GAs to HA specific attributes.
 These patterns can be configured to your needs. Any pattern must be unique in its own context.
 
+# Who can use
+* KNX integrators and end-users with access to the ETS project and knowledge about using ETS.
+* Small to no knowledge of programming to change the script settings
+* Small knowledge of command line usage, to run the script and read the output log.
+* Ruby development environment
+* Just read the how to!
+
 ## How to use
 1. Follow installation instructions of original repository: [https://github.com/laurent-martin/ets-to-homeassistant](https://github.com/laurent-martin/ets-to-homeassistant)
 2. Make sure all devices that you want in HA are available as ETS functions in your ETS project. See [ETS functions project requirements/recommendations](#ets-functions-project-requirementsrecommendations)
 3. Adapt script settings to your ETS project see [Settings inside TheFelix93.rb](#settings-inside-thefelix93rb)
 4. Execute main script
    
-   Adapt the paths in the command to your environment:
+   Adapt the paths in the command to your environment. I recommend using absolute paths. Its less error prone:
    ```bash
    ets_to_hass --format homeass --full-name --fix YOUR_SCRIPT_PATH\lib\ets_to_hass\specific\TheFelix93.rb --output YOUR_OUTPUT_PATH\config_knx.yaml YOUR_ETS_PROJECT_PATH\myexport.knxproj
    ```
