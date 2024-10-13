@@ -1,4 +1,4 @@
-# TheFelix93.rb Custom method for ets-to-homeassistant
+# TheFelix93.rb Custom method for ets-to-homeassistant from Martin Laurent.
 * Currently used/implemented ETS-functions:
    * switchable_light
       * On/Off
