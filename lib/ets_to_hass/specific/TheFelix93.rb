@@ -50,6 +50,7 @@ PATTERN_SENSOR = 'sensor'
 #string must be part of ets function name
 PATTERN_PRESENCE_SENSOR = 'präsenz'
 PATTERN_WINDOW_CONTACT = 'fensterkontakt'
+PATTERN_WINDALARM_SENSOR = 'windalarm'
 SENSOR_SYNC_STATE = true # can be used to change default sync state setting, see HA KNX docu.
 
 
@@ -216,6 +217,10 @@ def fix_objects(generator)
 							elsif object[:name].downcase().include?(PATTERN_WINDOW_CONTACT) then
 								object[:ha].merge!({ 
 									'device_class' => 'window'
+								})
+							elsif object[:name].downcase().include?(PATTERN_WINDALARM_SENSOR) then
+								object[:ha].merge!({ 
+									'device_class' => 'problem'
 								})
 							end
 						else # for all other sensor types an auto lookup ETS DPT to HA type is possible
