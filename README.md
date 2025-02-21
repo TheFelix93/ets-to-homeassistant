@@ -40,6 +40,9 @@ These patterns can be configured to your needs. Any pattern must be unique in it
    All warnings from my custom method start with "TheFelix93" e.g. `WARN -- : TheFelix93 Ankleide FB Heizung function type heating_floor not implemented.`
 7. Import output yaml into home assistant. Enjoy.
 
+## Possible output YAML
+[examples/TheFelix93_result.yaml](examples/TheFelix93_result.yaml)
+
 ## ETS functions project requirements/recommendations
 
 * According to some reports in original project. The parser can't process password protected ETS projects. My project is not protected, so did not test it.
