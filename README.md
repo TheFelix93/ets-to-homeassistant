@@ -13,6 +13,8 @@
       * binary sensors (e.g. reed contacts, presence or any true/false GA),
 	   * sensors (DPT-to-HA-Sensor-Type mapping table from documentation is used see https://www.home-assistant.io/integrations/knx/#value-types),
       * switches
+      * [NEW] climate
+	* [NEW] Deactivated functions, to skip ETS functions that might exist because of other reasons (I am open for improvements for your usecases, if you want to skip a function without changing the function name its technically possible, but was not relevant for my usecases.)
 
 This script uses ETS-Function-name-patterns to identify the function types and middle-group or any GA-Pattern to map GAs to HA specific attributes.
 These patterns can be configured to your needs. Any pattern must be unique in its own context.
@@ -48,9 +50,14 @@ These patterns can be configured to your needs. Any pattern must be unique in it
 
 Examples from my ETS project:
 * ETS building structure and  ETS example room
-  
+
    ![ETS building structure](images/TheFelix93/ETS%20building%20structure.jpg)
    ![ETS example room](images/TheFelix93/ETS%20example%20room.jpg)
+ 
+* Deactivated ETS function (use it to let the script ignore the ETS function)
+
+   ![ETS example deactivated](/images/TheFelix93/ETS%20function%20deactivated.jpg)
+  
 * ETS function CCT light
   
    ![ETS function CCT light](images/TheFelix93/ETS%20function%20CCT%20light.jpg)
@@ -78,7 +85,10 @@ Examples from my ETS project:
 * ETS function switchable light
   
 ![ETS function switchable light](images/TheFelix93/ETS%20function%20switchable%20light.jpg)
-   
+
+* ETS function climate
+
+![ETS function climate](images/TheFelix93/ETS%20function%20climate.jpg)
    
 ## Settings inside TheFelix93.rb
 TheFelix93.rb starts with a settings section.
@@ -87,6 +97,14 @@ All patterns are case-in-sensitive.
 ```ruby
 #### GENERAL ####
 ENTITY_NAME_WITH_FLOOR = true # if true and a function lies below a floor, the floor name is appended to the HA entity name
+
+SKIP_PATTERN = 'deactivated'
+
+
+CLIMATE_TEMP_STEP = 0.5 # Defines the step size in Kelvin for each step of setpoint_shift (scale factor). For non setpoint-shift configurations this is used to set the step of temperature sliders in UI.
+CLIMATE_SHIFT_POINT_MODE = 'DPT9002'
+
+SENSOR_SYNC_STATE = true # can be used to change default sync state setting for binary sensors, see HA KNX docu.
 
 
 #### Lights #####
@@ -104,11 +122,18 @@ GA_MIDDLE_GROUP_PATTERN_RGBCOLOR_SET = '/7/'
 GA_MIDDLE_GROUP_PATTERN_RGBCOLOR_STATUS = '/5/'
 
 #### Covers ####
-GA_MIDDLE_GROUP_PATTERN_COVER_UP_DOWN = nil # if you only map the GAs that are needed for HA, then you dont need to change this line. In my case I mapped all exisiting GAs for each ETS functions, even if its not needed for HA. So I have to put my middle group here to distinguish between up/down and current-direction GA. Both have the same DPT.
+GA_MIDDLE_GROUP_PATTERN_COVER_UP_DOWN = '/0/' # To enable up/down arrows in HA. I have to put my middle group here to distinguish between up/down and current-direction GA. Both have the same DPT.
 GA_MIDDLE_GROUP_PATTERN_COVER_POSITION_STATUS = '/4/'
 GA_MIDDLE_GROUP_PATTERN_COVER_POSITION_SET = '/3/'
 GA_MIDDLE_GROUP_PATTERN_COVER_ANGLE_SET = '/5/'
 GA_MIDDLE_GROUP_PATTERN_COVER_ANGLE_STATUS = '/6/'
+
+### Climate ###
+GA_MIDDLE_GROUP_PATTERN_CURRENT_TEMP = '/0/'
+GA_MIDDLE_GROUP_PATTERN_TARGET_TEMP = '/1/'
+GA_MIDDLE_GROUP_PATTERN_OPERATION_MODE_SET = '/5/'
+GA_MIDDLE_GROUP_PATTERN_OPERATION_MODE_STATUS = '/6/'
+
 
 #### Sensors ####
 #I name all my sensors like "*Sensor*" in :custom ets functions. This name pattern is used by the script to distinguish them from other custom functions.
@@ -119,7 +144,7 @@ PATTERN_SENSOR = 'sensor'
 #string must be part of ets function name
 PATTERN_PRESENCE_SENSOR = 'präsenz'
 PATTERN_WINDOW_CONTACT = 'fensterkontakt'
-SENSOR_SYNC_STATE = true # can be used to change default sync state setting, see HA KNX docu.
+PATTERN_WINDALARM_SENSOR = 'windalarm'
 
 
 #### Switches ####
