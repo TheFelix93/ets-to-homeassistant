@@ -19,6 +19,14 @@
 #### GENERAL ####
 ENTITY_NAME_WITH_FLOOR = true # if true and a function lies below a floor, the floor name is appended to the HA entity name
 
+SKIP_PATTERN = 'deactivated'
+
+
+CLIMATE_TEMP_STEP = 0.5 # Defines the step size in Kelvin for each step of setpoint_shift (scale factor). For non setpoint-shift configurations this is used to set the step of temperature sliders in UI.
+CLIMATE_SHIFT_POINT_MODE = 'DPT9002'
+
+SENSOR_SYNC_STATE = true # can be used to change default sync state setting for binary sensors, see HA KNX docu.
+
 
 #### Lights #####
 # DPT 7.600 in Lights can be 'color_temperature_state_address' or 'color_temperature_address', thus we need a criteria to decide.
@@ -35,11 +43,18 @@ GA_MIDDLE_GROUP_PATTERN_RGBCOLOR_SET = '/7/'
 GA_MIDDLE_GROUP_PATTERN_RGBCOLOR_STATUS = '/5/'
 
 #### Covers ####
-GA_MIDDLE_GROUP_PATTERN_COVER_UP_DOWN = nil # if you only map the GAs that are needed for HA, then you dont need to change this line. In my case I mapped all exisiting GAs for each ETS functions, even if its not needed for HA. So I have to put my middle group here to distinguish between up/down and current-direction GA. Both have the same DPT.
+GA_MIDDLE_GROUP_PATTERN_COVER_UP_DOWN = '/0/' # To enable up/down arrows in HA. I have to put my middle group here to distinguish between up/down and current-direction GA. Both have the same DPT.
 GA_MIDDLE_GROUP_PATTERN_COVER_POSITION_STATUS = '/4/'
 GA_MIDDLE_GROUP_PATTERN_COVER_POSITION_SET = '/3/'
 GA_MIDDLE_GROUP_PATTERN_COVER_ANGLE_SET = '/5/'
 GA_MIDDLE_GROUP_PATTERN_COVER_ANGLE_STATUS = '/6/'
+
+### Climate ###
+GA_MIDDLE_GROUP_PATTERN_CURRENT_TEMP = '/0/'
+GA_MIDDLE_GROUP_PATTERN_TARGET_TEMP = '/1/'
+GA_MIDDLE_GROUP_PATTERN_OPERATION_MODE_SET = '/5/'
+GA_MIDDLE_GROUP_PATTERN_OPERATION_MODE_STATUS = '/6/'
+
 
 #### Sensors ####
 #I name all my sensors like "*Sensor*" in :custom ets functions. This name pattern is used by the script to distinguish them from other custom functions.
@@ -51,7 +66,7 @@ PATTERN_SENSOR = 'sensor'
 PATTERN_PRESENCE_SENSOR = 'präsenz'
 PATTERN_WINDOW_CONTACT = 'fensterkontakt'
 PATTERN_WINDALARM_SENSOR = 'windalarm'
-SENSOR_SYNC_STATE = true # can be used to change default sync state setting, see HA KNX docu.
+
 
 
 #### Switches ####
@@ -62,7 +77,7 @@ PATTERN_SWITCH = nil # if you define a switch pattern, then only matches are add
 
 
 
-# Laurent's specific code for KNX configuration
+# TheFelix93's specific code for KNX configuration
 def fix_objects(generator)
   # loop on objects to find blinds
 
@@ -74,10 +89,13 @@ def fix_objects(generator)
 			object[:ha]['name'] = "#{object[:name]} #{object[:room]} #{object[:floor]}" 
 		end 
 
-		
+		if object[:name].downcase().include?(SKIP_PATTERN) then 
+			generator.delete_object(obj_id)
+		end
 		
 		# map FT-x type to home assistant type AND fix HA attributes for each function.
 		case object[:type]
+		
 		when :switchable_light, :dimmable_light 
 			object[:ha][:domain] = 'light'
 			#loop through GAs of that function
@@ -154,34 +172,45 @@ def fix_objects(generator)
 					end
 				
 				end
-			
-			
 
-		when :heating_switching_variable, :heating_floor, :heating_continuous_variable then
-			# Not implemented delete object from list
-			warning("TheFelix93", object[:room], "#{object[:name].to_s.cyan} function type #{object[:type].to_s.red} not implemented.")
+		when :heating_switching_variable, :heating_floor, :heating_continuous_variable then			
+			object[:ha][:domain] = 'climate'
 			
-			generator.delete_object(obj_id)	
-			# object[:ha][:domain] = 'climate'
-			# #loop through GAs of that function
-			# group_ids.each do |ga_id|
+			#default parameters needed in HA
+			object[:ha].merge!({ 
+				'temperature_step' => CLIMATE_TEMP_STEP,
+				'setpoint_shift_mode' => CLIMATE_SHIFT_POINT_MODE
+			})
+			
+			
+			#loop through GAs of that function
+			group_ids.each do |ga_id|	
 				
-				# ga_data = generator.group_address_data(ga_id)
-				# case ga_data[:datapoint]
-				# #when '1.007' then 'setpoint_shift_address'
-				# when '9.001' then
-					# if ga_data[:address].include?('/4/') then a_data[:ha][:address_type] = 'temperature_address' 
-					# elsif  ga_data[:address].include?('/1/') then a_data[:ha][:address_type] = 'target_temperature_state_address'
-					# else
-						# warning("TheFelix93", ga_data[:address], "#{ga_data[:name].to_s.cyan} un-managed datapoint #{ga_data[:datapoint].cyan} (#{object[:ha][:domain].magenta})")
-						# nil
-					# end
-				# #when '9.002' then 'setpoint_shift_state_address' TBD (may not needed?)
-				# else
-					# warning("TheFelix93", ga_data[:address], "#{ga_data[:name].to_s.cyan} un-managed datapoint #{ga_data[:datapoint].cyan} (#{object[:ha][:domain].magenta})")
-					# nil
-				# end
-			# end
+				ga_data = generator.group_address_data(ga_id)
+				case ga_data[:datapoint]
+				when '6.010', '1.007' then ga_data[:ha][:address_type] = 'setpoint_shift_address'
+				when '9.001' then
+					if ga_data[:address].include?(GA_MIDDLE_GROUP_PATTERN_CURRENT_TEMP) then ga_data[:ha][:address_type] = 'temperature_address' 
+					elsif  ga_data[:address].include?(GA_MIDDLE_GROUP_PATTERN_TARGET_TEMP) then ga_data[:ha][:address_type] = 'target_temperature_state_address'
+					else
+						warning("TheFelix93", ga_data[:address], "#{ga_data[:name].to_s.cyan} un-managed datapoint #{ga_data[:datapoint].cyan} (#{object[:ha][:domain].magenta})")
+						ga_data[:ha][:address_type] = :ignore
+					end
+				when '9.002' then ga_data[:ha][:address_type] = 'setpoint_shift_state_address'
+				when '20.102' then
+					if ga_data[:address].include?(GA_MIDDLE_GROUP_PATTERN_OPERATION_MODE_SET) then ga_data[:ha][:address_type] = 'operation_mode_address' 
+					elsif  ga_data[:address].include?(GA_MIDDLE_GROUP_PATTERN_OPERATION_MODE_STATUS) then ga_data[:ha][:address_type] = 'operation_mode_state_address'
+					else
+						warning("TheFelix93", ga_data[:address], "#{ga_data[:name].to_s.cyan} un-managed datapoint #{ga_data[:datapoint].cyan} (#{object[:ha][:domain].magenta})")
+						ga_data[:ha][:address_type] = :ignore
+					end
+				when '5.001' then ga_data[:ha][:address_type] = 'command_value_state_address'
+					 
+				else
+					warning("TheFelix93", ga_data[:address], "#{ga_data[:name].to_s.cyan} un-managed datapoint #{ga_data[:datapoint].cyan} (#{object[:ha][:domain].magenta})")
+					ga_data[:ha][:address_type] = :ignore
+				end
+			end
 		
 		when :custom then
 			
@@ -258,10 +287,10 @@ def fix_objects(generator)
 			end	
 
 
-		when :heating_radiator, :heating_switching_variable, :heating_floor, :heating_continuous_variable
+		when :heating_radiator
 			warning("TheFelix93", object[:room], "#{object[:name].to_s.cyan} function type #{object[:type].to_s.red} not implemented.")
 		else 
-			warning("TheFelix93", object[:room], "#{object[:name].to_s.cyan} function type #{object[:type].to_s.red} was not available in ETS when this script was developed, please use other ETS functions.")
+			warning("TheFelix93", object[:room], "#{object[:name].to_s.cyan} function type #{object[:type].to_s.red} was not available in ETS5 when this script was developed, please use other ETS functions.")
 		end
 	end
 end
