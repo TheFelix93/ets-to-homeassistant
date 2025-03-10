@@ -22,10 +22,8 @@ ENTITY_NAME_WITH_FLOOR = true # if true and a function lies below a floor, the f
 SKIP_PATTERN = 'deactivated'
 
 
-CLIMATE_TEMP_STEP = 0.5 # Defines the step size in Kelvin for each step of setpoint_shift (scale factor). For non setpoint-shift configurations this is used to set the step of temperature sliders in UI.
-CLIMATE_SHIFT_POINT_MODE = 'DPT9002'
 
-SENSOR_SYNC_STATE = true # can be used to change default sync state setting for binary sensors, see HA KNX docu.
+
 
 
 #### Lights #####
@@ -50,16 +48,34 @@ GA_MIDDLE_GROUP_PATTERN_COVER_ANGLE_SET = '/5/'
 GA_MIDDLE_GROUP_PATTERN_COVER_ANGLE_STATUS = '/6/'
 
 ### Climate ###
+GA_MIDDLE_GROUP_PATTERN_SETPOINT_SHIFT_ADDRESS = '/2/' # to distinguish setpoint_shift_status from setpoint_shift_address in DPT9002 mode. May not needed by your project. Somehow to many possibilities with climate...
 GA_MIDDLE_GROUP_PATTERN_CURRENT_TEMP = '/0/'
 GA_MIDDLE_GROUP_PATTERN_TARGET_TEMP = '/1/'
 GA_MIDDLE_GROUP_PATTERN_OPERATION_MODE_SET = '/5/'
 GA_MIDDLE_GROUP_PATTERN_OPERATION_MODE_STATUS = '/6/'
+
+CLIMATE_TEMP_STEP = 0.5 # Defines the step size in Kelvin for each step of setpoint_shift (scale factor). For non setpoint-shift configurations this is used to set the step of temperature sliders in UI.
+CLIMATE_SHIFT_POINT_MODE = 'DPT9002'
+
 
 
 #### Sensors ####
 #I name all my sensors like "*Sensor*" in :custom ets functions. This name pattern is used by the script to distinguish them from other custom functions.
 #string must be part of ets function name
 PATTERN_SENSOR = 'sensor'
+SENSOR_SYNC_STATE = true # can be used to change default sync state setting for binary sensors, see HA KNX docu.
+
+#### Number Inputs ####
+#I name all my number inputs like "*input*" in :custom ets functions.
+PATTERN_INPUT_NUMERIC = 'input'
+
+# to distinguish between GA for address and GA for state_address I added "(set)" to the names of all GAs that should be used for address.
+GA_NAME_PATTERN_INPUT_NUMERIC = '(set)'
+
+
+
+
+
 
 ## patterns to map HA device classes tell HA the type of binary sensor
 #string must be part of ets function name
@@ -189,6 +205,11 @@ def fix_objects(generator)
 				ga_data = generator.group_address_data(ga_id)
 				case ga_data[:datapoint]
 				when '6.010', '1.007' then ga_data[:ha][:address_type] = 'setpoint_shift_address'
+				when '9.002' then 
+					if ga_data[:address].include?(GA_MIDDLE_GROUP_PATTERN_SETPOINT_SHIFT_ADDRESS) then ga_data[:ha][:address_type] = 'setpoint_shift_address'
+					else
+						ga_data[:ha][:address_type] = 'setpoint_shift_state_address' 
+					end
 				when '9.001' then
 					if ga_data[:address].include?(GA_MIDDLE_GROUP_PATTERN_CURRENT_TEMP) then ga_data[:ha][:address_type] = 'temperature_address' 
 					elsif  ga_data[:address].include?(GA_MIDDLE_GROUP_PATTERN_TARGET_TEMP) then ga_data[:ha][:address_type] = 'target_temperature_state_address'
@@ -196,7 +217,6 @@ def fix_objects(generator)
 						warning("TheFelix93", ga_data[:address], "#{ga_data[:name].to_s.cyan} un-managed datapoint #{ga_data[:datapoint].cyan} (#{object[:ha][:domain].magenta})")
 						ga_data[:ha][:address_type] = :ignore
 					end
-				when '9.002' then ga_data[:ha][:address_type] = 'setpoint_shift_state_address'
 				when '20.102' then
 					if ga_data[:address].include?(GA_MIDDLE_GROUP_PATTERN_OPERATION_MODE_SET) then ga_data[:ha][:address_type] = 'operation_mode_address' 
 					elsif  ga_data[:address].include?(GA_MIDDLE_GROUP_PATTERN_OPERATION_MODE_STATUS) then ga_data[:ha][:address_type] = 'operation_mode_state_address'
@@ -228,7 +248,7 @@ def fix_objects(generator)
 				
 					ga_data = generator.group_address_data(ga_id)
 				
-					sensor_type = getSensorType(ga_data[:datapoint])
+					sensor_type = getTypeOfDPT(ga_data[:datapoint])
 					if sensor_type then
 						# all sensor need state_address=GA
 						ga_data[:ha][:address_type] = 'state_address'
@@ -251,6 +271,8 @@ def fix_objects(generator)
 								object[:ha].merge!({ 
 									'device_class' => 'problem'
 								})
+							else
+								# binary sensor without device_class
 							end
 						else # for all other sensor types an auto lookup ETS DPT to HA type is possible
 							object[:ha].merge!({ 
@@ -263,6 +285,39 @@ def fix_objects(generator)
 					end
 				
 				end
+			elsif object[:name].downcase().include?(PATTERN_INPUT_NUMERIC) then
+				# numeric inputs
+				object[:ha][:domain] = 'number'
+							
+				
+				#loop through GAs of that function
+				group_ids.each do |ga_id|
+				
+					ga_data = generator.group_address_data(ga_id)
+				
+					number_type = getTypeOfDPT(ga_data[:datapoint])
+					if number_type then					
+						object[:ha].merge!({ 
+							'type' => number_type
+						})
+						
+						# It would be possible to define all sorts of use cases with HA attributes step, min, max, mode etc.
+						# I decided to implement only the basics and define the other specifics manually in the yaml ouput.
+					
+						# identify address and state_address GA
+						if ga_data[:name].downcase().include?(GA_NAME_PATTERN_INPUT_NUMERIC) then
+							ga_data[:ha][:address_type] = 'address'
+						else
+							ga_data[:ha][:address_type] = 'state_address'
+						end
+						
+					else
+						ga_data[:ha][:address_type] = :ignore
+						warning("TheFelix93", ga_data[:address], "#{ga_data[:name].to_s.cyan} Unknown number input type with DPT #{ga_data[:datapoint].to_s.red}. Check if number input type exists in HA KNX integration")
+					end
+				
+				end
+				
 			elsif PATTERN_SWITCH && object[:name].downcase().include?(PATTERN_SWITCH) || PATTERN_SWITCH == nil then			#In my case all remaining custom functions are switches, but you may have other, so use this PATTERN_SWITCH
 				object[:ha][:domain] = 'switch'
 				
@@ -299,9 +354,12 @@ end
 
 
 
-def getSensorType(knxdpt)
+def getTypeOfDPT(knxdpt)
 		case knxdpt
 		when '1.001' then 'binary'
+		when '1.002' then 'binary'
+		when '1.003' then 'binary'
+		when '1.011' then 'binary'
 		when '5' then '1byte_unsigned'
 		when '5.001' then 'percent'
 		when '5.003' then 'angle'
