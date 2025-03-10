@@ -14,6 +14,7 @@
 	   * sensors (DPT-to-HA-Sensor-Type mapping table from documentation is used see https://www.home-assistant.io/integrations/knx/#value-types),
       * switches
       * [NEW] climate
+      * [NEW] Number new domain number (https://www.home-assistant.io/integrations/knx/#number). Optional: Specific settings like min, max, step can be set manually in yaml output, because there are to many usecases.
 	* [NEW] Deactivated functions, to skip ETS functions that might exist because of other reasons (I am open for improvements for your usecases, if you want to skip a function without changing the function name its technically possible, but was not relevant for my usecases.)
 
 This script uses ETS-Function-name-patterns to identify the function types and middle-group or any GA-Pattern to map GAs to HA specific attributes.
@@ -64,9 +65,9 @@ Examples from my ETS project:
 * ETS function CCT light
   
    ![ETS function CCT light](images/TheFelix93/ETS%20function%20CCT%20light.jpg)
-* ETS function RBG light
+* ETS function RGB light
   
-![ETS function RBG light](images/TheFelix93/ETS%20function%20RBG%20light.jpg)
+![ETS function RGB light](images/TheFelix93/ETS%20function%20RBG%20light.jpg)
 * ETS function dimmable light
 
 ![ETS function dimmable light](images/TheFelix93/ETS%20function%20dimmable%20light.jpg)
@@ -92,6 +93,15 @@ Examples from my ETS project:
 * ETS function climate
 
 ![ETS function climate](images/TheFelix93/ETS%20function%20climate.jpg)
+
+* ETS function numeric value: no screenshot available
+```
+number:
+- name: Input Lüftungsvoreinstellung Lüftung Zentral
+  type: pulse
+  address: 24/1/2
+  state_address: 24/1/1
+```
    
 ## Settings inside TheFelix93.rb
 TheFelix93.rb starts with a settings section.
