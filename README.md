@@ -1,6 +1,7 @@
 # TheFelix93.rb Custom method for ets-to-homeassistant from Martin Laurent.
 
 ## Now with GUI and prebuilt .exe files to enable usage without Ruby dev-env on windows.
+Important: Download the whole repository, because all files and the folder structure is needed. Just download whole repo as zip and extract it where you want.
 Exe files can be found in "/bin". If you want to execute the command out of the GUI the prebuilt ets_to_hass.exe is required and that you run the EtsToHassTheFelix93GUI.exe from the bin folder, to have all needed relative paths.
 ![ETS to Homeassistant GUI ](images/TheFelix93/EtsToHassTheFelix93GUI.jpg)
 
