@@ -39,10 +39,15 @@ Gem::Specification.new do |spec|
   spec.signing_key = File.expand_path(ENV.fetch('SIGNING_KEY')) if ENV.key?('SIGNING_KEY')
   spec.required_ruby_version = '>= 2.7'
   # dependency gems for runtime
+  spec.add_runtime_dependency('clipboard', '~> 2.0.0')
+  spec.add_runtime_dependency('ffi', '~> 1.9')
   spec.add_runtime_dependency('rubyzip', '~> 2.0')
   spec.add_runtime_dependency('xml-simple', '~> 1.0')
+  spec.add_development_dependency('csv')
+  spec.add_development_dependency('glimmer-dsl-libui', '~> 0.12.8')
   # development gems
   spec.add_development_dependency('bundler', '~> 2.0')
+  spec.add_development_dependency('debug', '~> 1.9')
   spec.add_development_dependency('rake', '~> 13.0')
   spec.add_development_dependency('reek', '~> 6.1.0')
   spec.add_development_dependency('rspec', '~> 3.0')
