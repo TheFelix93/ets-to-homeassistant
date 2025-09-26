@@ -1,5 +1,9 @@
 # TheFelix93.rb Custom method for ets-to-homeassistant from Martin Laurent.
-## Now also password protected ETS projects are supported! The CMD will prompt for it.
+
+
+
+## Now also password protected ETS projects (ETS5 + ETS6) are supported! The CMD will prompt for it.
+## In theory ETS6 projects are fully supported, but I only test a small project with one light.
 ## Now with GUI and prebuilt .exe files to enable usage without Ruby dev-env on windows.
 Important: All files and the folder structure is needed so just download whole repo as zip and extract it where you want.
 Exe files can be found in "/bin". If you want to execute the command via the GUI you need to run the EtsToHassTheFelix93GUI.exe. The exe files must stay in the bin folder for relative pathing.
@@ -53,6 +57,7 @@ These patterns can be configured to your needs. Any pattern must be unique in it
 ## ETS functions project requirements/recommendations
 
 * Every GA that you want to get in KNX yaml config must be grouped into ETS-Functions. (Nobody can guess which GAs belong together. ETS Functions are used to create relations between GAs, that are very similar to HA entities.)
+* All GAs must be tagged with the correct DPT, see [DPT to HA attribute type mapping](#ga-dpt-to-home-assistant-entity-attribute-type)
 * The script requires unique text patterns in function names, so create your ETS function structure accordingly.
 * The script requires unique GA-patterns to correctly map all sorts of HA-KNX attributes. I use **function/sub-function/channel-name** and script settings are set accordingly. Other schemes work as well, you just need to changes the script settings to fit your system.
 * A building structure in ETS project is recommended. It makes it easy to identify HA entities laters. I like to have function name, room and floor as part of the entity name.
@@ -171,6 +176,33 @@ PATTERN_WINDALARM_SENSOR = 'windalarm'
 #string must be part of ets function name
 PATTERN_SWITCH = nil # if you define a switch pattern, then only matches are added as switches to output yaml. With nil set, all remaining custom functions are considered as switches.
 ```
+## Mapping GA DPT to home assistant entity attribute type
+DPS that are listed multiple times are destinguished by other criteria e.g. ETS-function type or pattern in name, middle group pattern defined in settings above.
+
+DPT                            |  attribute_name                  
+-------------------------------|----------------------------------
+1.001, 1.010                   |  address                         
+1.011                          |  state_address                   
+7.600                          |  color_temperature_state_address 
+7.600                          |  color_temperature_address       
+5.001                          |  brightness_state_address        
+5.001                          |  brightness_address              
+232.600                        |  color_address                   
+232.600                        |  color_state_address             
+1.008                          |  move_long_address               
+1.007, 1.017                   |  stop_address                    
+5.001                          |  position_state_address          
+5.001                          |  position_address                
+5.001                          |  angle_address                   
+5.001                          |  angle_state_address             
+1.007, 6.010, 9.002            |  setpoint_shift_address                  
+9.002                          |  setpoint_shift_state_address    
+9.001                          |  temperature_address             
+9.001                          |  target_temperature_state_address
+20.102                         |  operation_mode_address          
+20.102                         |  operation_mode_state_address    
+5.001                          |  command_value_state_address     
+any DPT for sensor based [KNX HA docu](https://www.home-assistant.io/integrations/knx/#value-types))  |  state_address                   
 
 # END OF README - TheFelix93.rb Custom method for ets-to-homeassistant
 All from here is original readme.
