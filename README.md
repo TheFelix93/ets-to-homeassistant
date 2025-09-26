@@ -1,5 +1,5 @@
 # TheFelix93.rb Custom method for ets-to-homeassistant from Martin Laurent.
-
+## Now also password protected ETS projects are supported! The CMD will prompt for it. This might be annoying if many retries are needed. This way its the most secure at least.
 ## Now with GUI and prebuilt .exe files to enable usage without Ruby dev-env on windows.
 Important: Download the whole repository, because all files and the folder structure is needed. Just download whole repo as zip and extract it where you want.
 Exe files can be found in "/bin". If you want to execute the command out of the GUI the prebuilt ets_to_hass.exe is required and that you run the EtsToHassTheFelix93GUI.exe from the bin folder, to have all needed relative paths.
@@ -52,7 +52,6 @@ These patterns can be configured to your needs. Any pattern must be unique in it
 
 ## ETS functions project requirements/recommendations
 
-* According to some reports in original project. The parser can't process password protected ETS projects. My project is not protected, so did not test it.
 * Every GA that you want to get in KNX yaml config must be grouped into ETS-Functions. (Nobody can guess which GAs belong together. ETS Functions are used to create relations between GAs, that are very similar to HA entities.)
 * The script requires unique text patterns in function names, so create your ETS function structure accordingly.
 * The script requires unique GA-patterns to correctly map all sorts of HA-KNX attributes. I use **function/sub-function/channel-name** and script settings are set accordingly. Other schemes work as well, you just need to changes the script settings to fit your system.
