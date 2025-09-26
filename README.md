@@ -1,8 +1,8 @@
 # TheFelix93.rb Custom method for ets-to-homeassistant from Martin Laurent.
-## Now also password protected ETS projects are supported! The CMD will prompt for it. This might be annoying if many retries are needed. This way its the most secure at least.
+## Now also password protected ETS projects are supported! The CMD will prompt for it.
 ## Now with GUI and prebuilt .exe files to enable usage without Ruby dev-env on windows.
-Important: Download the whole repository, because all files and the folder structure is needed. Just download whole repo as zip and extract it where you want.
-Exe files can be found in "/bin". If you want to execute the command out of the GUI the prebuilt ets_to_hass.exe is required and that you run the EtsToHassTheFelix93GUI.exe from the bin folder, to have all needed relative paths.
+Important: All files and the folder structure is needed so just download whole repo as zip and extract it where you want.
+Exe files can be found in "/bin". If you want to execute the command via the GUI you need to run the EtsToHassTheFelix93GUI.exe. The exe files must stay in the bin folder for relative pathing.
 ![ETS to Homeassistant GUI ](images/TheFelix93/EtsToHassTheFelix93GUI.jpg)
 
 * Currently used/implemented ETS-functions:
@@ -17,7 +17,7 @@ Exe files can be found in "/bin". If you want to execute the command out of the 
       * shutters with angle-settings
 	* custom
       * binary sensors (e.g. reed contacts, presence or any true/false GA),
-	   * sensors (DPT-to-HA-Sensor-Type mapping table from documentation is used see https://www.home-assistant.io/integrations/knx/#value-types),
+	   * All types of sensors (DPT-to-HA-Sensor-Type mapping table from documentation is used see https://www.home-assistant.io/integrations/knx/#value-types),
       * switches
       * [NEW] climate
       * [NEW] Number new domain number (https://www.home-assistant.io/integrations/knx/#number). Optional: Specific settings like min, max, step can be set manually in yaml output, because there are to many usecases.
@@ -77,6 +77,7 @@ Examples from my ETS project:
 
 ![ETS function dimmable light](images/TheFelix93/ETS%20function%20dimmable%20light.jpg)
 * ETS function sensor current
+* basically every sensor type works because the DPT from ETS is used to determing the HA sensor_type
   
 ![ETS function sensor current](images/TheFelix93/ETS%20function%20sensor%20current.jpg)
 * ETS function sensor temperature
