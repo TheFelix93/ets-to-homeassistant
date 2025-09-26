@@ -28,6 +28,7 @@ gene_formats = (EtsToHass::Generator.instance_methods - EtsToHass::Generator.sup
 
 opts = GetoptLong.new(
   ['--help', '-h', GetoptLong::NO_ARGUMENT],
+  # ['--password', '-p', GetoptLong::REQUIRED_ARGUMENT],
   ['--ha-knx', '-k', GetoptLong::NO_ARGUMENT],
   ['--sort-by-name', '-r', GetoptLong::NO_ARGUMENT],
   ['--full-name', '-n', GetoptLong::NO_ARGUMENT],
@@ -74,6 +75,8 @@ opts.each do |opt, arg|
             add room name in object name
     END_OF_MANUAL
     Process.exit(1)
+  # when '--password'
+  #   options[:password] = arg
   when '--fix'
     options[:specific] = arg
   when '--format'

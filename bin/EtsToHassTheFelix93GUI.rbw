@@ -89,7 +89,7 @@ class EtsToHassApp
 
   class AppModel
     attr_accessor :project_path, :output_path, :format_index, :ha_knx, :sort_by_name, :full_name,
-                  :fix_file_path, :addr_index, :trace_index, :cmd_preview, :exe_path
+                  :fix_file_path, :addr_index, :trace_index, :cmd_preview, :exe_path # , :password
 
     def initialize
       Glimmer::LibUI.queue_main do
@@ -100,7 +100,7 @@ class EtsToHassApp
         s = defaults_hash if s.empty?
 
         apply_hash(s)
-        rebuild_preview
+        rebuild_preview(false)
       end
     end
 
@@ -190,7 +190,17 @@ class EtsToHassApp
       trace_values[@trace_index] || ''
     end
 
-    def rebuild_preview
+    def cmd_fully_quote(arg)
+      s = arg.to_s
+      # 1) neutralize percent expansion
+      s = s.gsub('%', '%%')
+      # 2) double embedded quotes
+      s = s.gsub('"', '""')
+      # 3) wrap in quotes
+      %Q("#{s}")
+    end
+
+    def rebuild_preview(return_only)
       argv = []
       argv << '--ha-knx' if @ha_knx
       argv << '--sort-by-name' if @sort_by_name
@@ -200,6 +210,14 @@ class EtsToHassApp
       argv += ['--addr', addr] unless addr.to_s.strip.empty?
       argv += ['--trace', trace] unless trace.to_s.strip.empty?
       argv += ['--output', "\"#{@output_path.strip}\""] unless @output_path.to_s.strip.empty?
+
+      # if return_only
+      #   argv += ['--password', "#{cmd_fully_quote(@password.strip)}"] unless @password.to_s.strip.empty?
+      # elsif !return_only && !@password.to_s.strip.empty?
+      #   argv += ['--password', '"PASSWORD_HIDDEN"']
+      #   argv += ['--password', "#{cmd_fully_quote(@password.strip)}"] unless @password.to_s.strip.empty?
+      # end
+
       argv << "\"#{@project_path.strip}\"" unless @project_path.to_s.strip.empty?
 
       if @exe_path.to_s.strip.empty?
@@ -214,9 +232,25 @@ class EtsToHassApp
 
       suffix = ''
 
-      new_cmd = "#{prefix} && #{command_args.join(' ')}#{suffix}"
+      # Ensure every arg is a UTF-8 String before join
+      safe_args = command_args.map do |a|
+        s = a.to_s
+        s = s.dup.force_encoding(Encoding::UTF_8) if s.encoding == Encoding::ASCII_8BIT
+        # If bytes are not valid UTF-8, transcode with replacement to avoid exceptions
+        s.valid_encoding? ? s : s.encode(Encoding::UTF_8, invalid: :replace, undef: :replace, replace: '?')
+      end
 
-      self.cmd_preview = new_cmd
+      safe_prefix = prefix.to_s
+      safe_prefix = safe_prefix.dup.force_encoding(Encoding::UTF_8) if safe_prefix.encoding == Encoding::ASCII_8BIT
+      safe_prefix = safe_prefix.encode(Encoding::UTF_8, invalid: :replace, undef: :replace, replace: '?') unless safe_prefix.valid_encoding?
+
+      safe_suffix = suffix.to_s
+      safe_suffix = safe_suffix.dup.force_encoding(Encoding::UTF_8) if safe_suffix.encoding == Encoding::ASCII_8BIT
+      safe_suffix = safe_suffix.encode(Encoding::UTF_8, invalid: :replace, undef: :replace, replace: '?') unless safe_suffix.valid_encoding?
+
+      new_cmd = "#{safe_prefix} && #{safe_args.join(' ')}#{safe_suffix}"
+
+      return_only ? new_cmd : self.cmd_preview = new_cmd
     end
 
     # ADD: export settings hash
@@ -269,7 +303,7 @@ class EtsToHassApp
               button('Reset to Defaults') do
                 on_clicked do
                   model.apply_defaults
-                  model.rebuild_preview
+                  model.rebuild_preview(false)
                 end
               end
               label do
@@ -287,9 +321,15 @@ class EtsToHassApp
                 form do
                   project_entry = entry do
                     label '.knxproj file'
-                    text <=> [model, :project_path, { after_write: ->(_) { model.rebuild_preview } }] # rubocop:disable Layout/SpaceAroundOperators,Lint/Void
+                    read_only true
+                    text <=> [model, :project_path, { after_write: ->(_) { model.rebuild_preview(false) } }] # rubocop:disable Layout/SpaceAroundOperators,Lint/Void
                     stretchy false
                   end
+                  # password_entry do
+                  #   label '.knxproj password'
+                  #   text <=> [model, :password, { after_write: ->(_) { model.rebuild_preview(false) } }] # rubocop:disable Layout/SpaceAroundOperators,Lint/Void
+                  #   stretchy false
+                  # end
 
                   button('Browse…') do
                     on_clicked do
@@ -298,15 +338,16 @@ class EtsToHassApp
                         shown = path.dup.force_encoding(Encoding::UTF_8)
                         model.project_path = shown
                         project_entry.text = shown
-                        model.rebuild_preview
+                        model.rebuild_preview(false)
                       end
                     end
                     stretchy false
                   end
 
                   output_entry = entry do
-                    label 'Output file (optional)'
-                    text <=> [model, :output_path, { after_write: ->(_) { model.rebuild_preview } }] # rubocop:disable Lint/Void
+                    label 'Output file'
+                    read_only true
+                    text <=> [model, :output_path, { after_write: ->(_) { model.rebuild_preview(false) } }] # rubocop:disable Lint/Void
                     stretchy false
                   end
 
@@ -317,15 +358,16 @@ class EtsToHassApp
                         shown = path.dup.force_encoding(Encoding::UTF_8)
                         model.output_path = shown
                         output_entry.text = shown
-                        model.rebuild_preview
+                        model.rebuild_preview(false)
                       end
                     end
                     stretchy false
                   end
 
                   fix_entry = entry do
+                    read_only true
                     label 'Ruby File (specific code to fix objects)'
-                    text <=> [model, :fix_file_path, { after_write: ->(_) { model.rebuild_preview } }] # rubocop:disable Lint/Void
+                    text <=> [model, :fix_file_path, { after_write: ->(_) { model.rebuild_preview(false) } }] # rubocop:disable Lint/Void
                     stretchy false
                   end
 
@@ -337,7 +379,7 @@ class EtsToHassApp
                         shown = path.dup.force_encoding(Encoding::UTF_8)
                         model.fix_file_path = shown
                         fix_entry.text = shown
-                        model.rebuild_preview
+                        model.rebuild_preview(false)
                       end
                     end
                   end
@@ -356,20 +398,20 @@ class EtsToHassApp
                     end
                     combobox do
                       items model.format_values
-                      selected <=> [model, :format_index, { after_write: ->(_) { model.rebuild_preview } }] # rubocop:disable Lint/Void
+                      selected <=> [model, :format_index, { after_write: ->(_) { model.rebuild_preview(false) } }] # rubocop:disable Lint/Void
                       stretchy false
                     end
 
                     checkbox('HA KNX level') do
-                      checked <=> [model, :ha_knx, { after_write: ->(_) { model.rebuild_preview } }] # rubocop:disable Lint/Void
+                      checked <=> [model, :ha_knx, { after_write: ->(_) { model.rebuild_preview(false) } }] # rubocop:disable Lint/Void
                       stretchy false
                     end
                     checkbox('Sort by name') do
-                      checked <=> [model, :sort_by_name, { after_write: ->(_) { model.rebuild_preview } }] # rubocop:disable Lint/Void
+                      checked <=> [model, :sort_by_name, { after_write: ->(_) { model.rebuild_preview(false) } }] # rubocop:disable Lint/Void
                       stretchy false
                     end
                     checkbox('Full name') do
-                      checked <=> [model, :full_name, { after_write: ->(_) { model.rebuild_preview } }] # rubocop:disable Lint/Void
+                      checked <=> [model, :full_name, { after_write: ->(_) { model.rebuild_preview(false) } }] # rubocop:disable Lint/Void
                       stretchy false
                     end
                     label do
@@ -385,7 +427,7 @@ class EtsToHassApp
                     end
                     combobox do
                       items model.addr_values
-                      selected <=> [model, :addr_index, { after_write: ->(_) { model.rebuild_preview } }] # rubocop:disable Lint/Void
+                      selected <=> [model, :addr_index, { after_write: ->(_) { model.rebuild_preview(false) } }] # rubocop:disable Lint/Void
                       stretchy false
                     end
 
@@ -395,7 +437,7 @@ class EtsToHassApp
                     end
                     combobox do
                       items model.trace_values
-                      selected <=> [model, :trace_index, { after_write: ->(_) { model.rebuild_preview } }] # rubocop:disable Lint/Void
+                      selected <=> [model, :trace_index, { after_write: ->(_) { model.rebuild_preview(false) } }] # rubocop:disable Lint/Void
                       stretchy false
                     end
                     label do
@@ -412,19 +454,21 @@ class EtsToHassApp
                 vertical_box do
                   form do
                     exe_entry = entry do
+                      read_only true
                       label 'ets_to_hass.exe'
-                      text <=> [model, :exe_path, { after_write: ->(_) { model.rebuild_preview } }] # rubocop:disable Lint/Void
+                      text <=> [model, :exe_path, { after_write: ->(_) { model.rebuild_preview(false) } }] # rubocop:disable Lint/Void
                       stretchy true
                     end
 
                     button('Browse…') do
+                      stretchy false
                       on_clicked do
                         path = open_file
                         if path && !path.empty?
                           shown = path.dup.force_encoding(Encoding::UTF_8)
                           model.exe_path = shown
                           exe_entry.text = shown
-                          model.rebuild_preview
+                          model.rebuild_preview(false)
                         end
                       end
                     end
@@ -447,7 +491,7 @@ class EtsToHassApp
 
                     button('Execute in CMD') do
                       on_clicked do
-                        cmd = model.cmd_preview.to_s
+                        cmd = model.rebuild_preview(true)
                         next if cmd.empty?
 
                         runner.open_user_cmd(command: cmd).to_s
