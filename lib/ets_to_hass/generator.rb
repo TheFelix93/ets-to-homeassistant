@@ -150,7 +150,7 @@ module EtsToHass
               break if project_data && zero_data
             rescue StandardError => e
               # Bad password / wrong decrypter leads to errors on get_next_entry/read; try next decrypter
-              last_error = 'Wrong password or the ETS uses an unknown encryption method (supported are AES256, AES128, ZipCrypto-Deflate)'
+              last_error = "Wrong password or the ETS uses an unknown encryption method (supported are AES256, AES128, ZipCrypto-Deflate):\n #{e}"
               next
             end
 

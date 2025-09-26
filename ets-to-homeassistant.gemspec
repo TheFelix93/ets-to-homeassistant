@@ -44,7 +44,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency('ffi', '~> 1.9')
   spec.add_runtime_dependency('getoptlong')
   spec.add_runtime_dependency('glimmer-dsl-libui', '~> 0.12.8')
-  spec.add_runtime_dependency('rubyzip', '~> 3.0')
+  spec.add_runtime_dependency('rubyzip', '~> 3.1')
   spec.add_runtime_dependency('xml-simple', '~> 1.0')
   # development gems
   spec.add_development_dependency('bundler', '~> 2.0')
