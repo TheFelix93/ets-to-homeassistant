@@ -9,6 +9,7 @@ require 'fileutils'
 require 'ets_to_hass/string_colors'
 require 'ets_to_hass/info'
 require 'io/console'
+require 'base64'
 
 module EtsToHass
   # Import ETS project file and generate configuration for Home Assistant and KNXWeb
@@ -130,10 +131,11 @@ module EtsToHass
             # try a sequence of decrypters until one works
             IO.console.puts 'Your KNX project is password protected!'
             password = IO.console.getpass('Enter password: ')
+
             decrypters = []
             begin
-              decrypters << Zip::AESDecrypter.new(password, Zip::AESEncryption::STRENGTH_256_BIT)
-              decrypters << Zip::AESDecrypter.new(password, Zip::AESEncryption::STRENGTH_128_BIT)
+              decrypters << Zip::AESDecrypter.new(ets6_encrypt_password(password), Zip::AESEncryption::STRENGTH_256_BIT)
+              decrypters << Zip::AESDecrypter.new(ets6_encrypt_password(password), Zip::AESEncryption::STRENGTH_128_BIT)
             rescue NameError
               # AES classes not available (older rubyzip), skip AES variants
             end
@@ -191,6 +193,20 @@ module EtsToHass
         end
       end
       [proj, zero]
+    end
+
+    def ets6_encrypt_password(password_utf8)
+      # ETS6 derives from UTF-16LE bytes of the entered password
+
+      utf16le_bytes = password_utf8.encode('UTF-16LE')
+      key = OpenSSL::KDF.pbkdf2_hmac(
+        utf16le_bytes,
+        salt:       '21.project.ets.knx.org'.b,
+        iterations: 65_536,
+        length:     32,
+        hash:       'sha256'
+      )
+      Base64.strict_encode64(key)
     end
 
     # process group range recursively and find addresses
